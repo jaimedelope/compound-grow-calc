@@ -1,9 +1,9 @@
-import { CompoundInterestCalculator } from '@/components/CompoundInterestCalculator';
+import { NetSalaryCalculator } from '@/components/NetSalaryCalculator';
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      <CompoundInterestCalculator />
+      <NetSalaryCalculator />
     </div>
   );
 };
