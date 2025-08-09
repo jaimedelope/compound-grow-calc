@@ -27,6 +27,7 @@ interface SalaryResult {
   grossAnnual: number;
   grossPeriodic: number;
   socialSecurityContribution: number;
+  employerSocialSecurity: number;
   irpfRetention: number;
   netAnnual: number;
   netPeriodic: number;
@@ -192,8 +193,117 @@ export const NetSalaryChart: React.FC<NetSalaryChartProps> = ({ result }) => {
     cutout: '60%'
   };
 
+  // Stacked Bar Chart Data (Employer Cost Breakdown)
+  const stackedData = {
+    labels: ['Coste Total para la Empresa'],
+    datasets: [
+      {
+        label: 'SS Empresa',
+        data: [result.employerSocialSecurity],
+        backgroundColor: '#00B8D9',
+        borderColor: '#008DA6',
+        borderWidth: 1
+      },
+      {
+        label: 'SS Trabajador',
+        data: [result.socialSecurityContribution],
+        backgroundColor: '#2D9CDB',
+        borderColor: '#2380B8',
+        borderWidth: 1
+      },
+      {
+        label: 'IRPF',
+        data: [result.irpfRetention],
+        backgroundColor: '#7B61FF',
+        borderColor: '#6B4EE6',
+        borderWidth: 1
+      },
+      {
+        label: 'Salario Neto',
+        data: [result.netAnnual],
+        backgroundColor: '#27AE60',
+        borderColor: '#1E8449',
+        borderWidth: 1
+      }
+    ]
+  };
+
+  const stackedOptions = {
+    indexAxis: 'y' as const,
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Euros (€)',
+          color: 'hsl(220, 10%, 46%)'
+        },
+        ticks: {
+          callback: function(value: any) {
+            return formatCurrency(value);
+          },
+          color: 'hsl(220, 10%, 46%)'
+        },
+        grid: {
+          color: 'hsl(220, 13%, 91%)'
+        }
+      },
+      y: {
+        stacked: true,
+        ticks: {
+          color: 'hsl(220, 10%, 46%)'
+        },
+        grid: {
+          display: false
+        }
+      }
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const total = result.employerSocialSecurity + result.socialSecurityContribution + result.irpfRetention + result.netAnnual;
+            const percentage = ((context.parsed.x / total) * 100).toFixed(1);
+            return `${context.dataset.label}: ${formatCurrency(context.parsed.x)} (${percentage}%)`;
+          }
+        }
+      },
+      legend: {
+        position: 'bottom' as const,
+        labels: {
+          padding: 20,
+          usePointStyle: true,
+          font: {
+            size: 12
+          },
+          color: 'hsl(220, 20%, 15%)'
+        }
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Stacked Breakdown Chart */}
+      <Card className="backdrop-blur-sm border-0 shadow-elegant bg-gradient-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Desglose del Coste vs. Neto
+          </CardTitle>
+          <CardDescription>
+            Distribución del coste total para la empresa en capas apiladas
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-40">
+            <Bar data={stackedData} options={stackedOptions} />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Bar Chart */}
       <Card className="backdrop-blur-sm border-0 shadow-elegant bg-gradient-card">
         <CardHeader>
@@ -233,28 +343,34 @@ export const NetSalaryChart: React.FC<NetSalaryChartProps> = ({ result }) => {
       {/* Summary Stats */}
       <Card className="backdrop-blur-sm border-0 shadow-elegant bg-gradient-card">
         <CardContent className="pt-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Retención Total</p>
-              <p className="text-lg font-bold text-destructive">
-                {((result.socialSecurityContribution + result.irpfRetention) / result.grossAnnual * 100).toFixed(1)}%
+              <p className="text-sm text-muted-foreground">Coste Total Empresa</p>
+              <p className="text-lg font-bold text-primary">
+                {formatCurrency(result.employerSocialSecurity + result.socialSecurityContribution + result.irpfRetention + result.netAnnual)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Seguridad Social</p>
-              <p className="text-lg font-bold text-warning">
+              <p className="text-sm text-muted-foreground">SS Empresa</p>
+              <p className="text-lg font-bold" style={{color: '#00B8D9'}}>
+                {(result.employerSocialSecurity / result.grossAnnual * 100).toFixed(1)}%
+              </p>
+            </div>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">SS Trabajador</p>
+              <p className="text-lg font-bold" style={{color: '#2D9CDB'}}>
                 {(result.socialSecurityContribution / result.grossAnnual * 100).toFixed(1)}%
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">IRPF</p>
-              <p className="text-lg font-bold text-info">
+              <p className="text-lg font-bold" style={{color: '#7B61FF'}}>
                 {(result.irpfRetention / result.grossAnnual * 100).toFixed(1)}%
               </p>
             </div>
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Salario Neto</p>
-              <p className="text-lg font-bold text-success">
+              <p className="text-lg font-bold" style={{color: '#27AE60'}}>
                 {(result.netAnnual / result.grossAnnual * 100).toFixed(1)}%
               </p>
             </div>

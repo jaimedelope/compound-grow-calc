@@ -23,6 +23,7 @@ interface SalaryResult {
   grossAnnual: number;
   grossPeriodic: number;
   socialSecurityContribution: number;
+  employerSocialSecurity: number;
   irpfRetention: number;
   netAnnual: number;
   netPeriodic: number;
@@ -106,13 +107,25 @@ export const NetSalaryCalculator: React.FC = () => {
   };
 
   const calculateSocialSecurity = (grossSalary: number): number => {
-    // Cotización a la Seguridad Social 2024
+    // Cotización a la Seguridad Social 2024 - Trabajador
     const ssBase = Math.min(grossSalary, 53760); // Base máxima de cotización 2024
     const commonContingencies = ssBase * 0.047; // 4.7%
     const unemployment = ssBase * 0.0155; // 1.55%
     const training = ssBase * 0.001; // 0.1%
     
     return commonContingencies + unemployment + training;
+  };
+
+  const calculateEmployerSocialSecurity = (grossSalary: number): number => {
+    // Cotización a la Seguridad Social 2024 - Empresa
+    const ssBase = Math.min(grossSalary, 53760); // Base máxima de cotización 2024
+    const commonContingencies = ssBase * 0.236; // 23.6%
+    const unemployment = ssBase * 0.055; // 5.5%
+    const training = ssBase * 0.006; // 0.6%
+    const workplaceAccidents = ssBase * 0.0065; // 0.65% (promedio)
+    const fogasa = ssBase * 0.002; // 0.2%
+    
+    return commonContingencies + unemployment + training + workplaceAccidents + fogasa;
   };
 
   const calculateIRPF = (grossSalary: number, socialSecurity: number, params: SalaryParams): number => {
@@ -197,6 +210,7 @@ export const NetSalaryCalculator: React.FC = () => {
 
     const grossAnnual = params.grossSalary;
     const socialSecurity = calculateSocialSecurity(grossAnnual);
+    const employerSS = calculateEmployerSocialSecurity(grossAnnual);
     const irpf = calculateIRPF(grossAnnual, socialSecurity, params);
     const netAnnual = grossAnnual - socialSecurity - irpf;
     
@@ -209,6 +223,7 @@ export const NetSalaryCalculator: React.FC = () => {
       grossAnnual,
       grossPeriodic,
       socialSecurityContribution: socialSecurity,
+      employerSocialSecurity: employerSS,
       irpfRetention: irpf,
       netAnnual,
       netPeriodic,
