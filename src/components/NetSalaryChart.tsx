@@ -34,6 +34,10 @@ interface SalaryResult {
   grossPeriodic: number;
   socialSecurityContribution: number;
   employerSocialSecurity: number;
+  meiWorker: number;
+  meiEmployer: number;
+  solidarityQuotaWorker: number;
+  solidarityQuotaEmployer: number;
   irpfRetention: number;
   netAnnual: number;
   netPeriodic: number;
@@ -200,50 +204,115 @@ export const NetSalaryChart: React.FC<NetSalaryChartProps> = ({ result }) => {
   };
 
   // Stacked Area Chart Data (Employer Cost Breakdown)
+  const datasets = [];
+  
+  // SS Empresa
+  datasets.push({
+    label: 'SS Empresa',
+    data: [result.employerSocialSecurity, result.employerSocialSecurity, result.employerSocialSecurity, result.employerSocialSecurity, result.employerSocialSecurity],
+    backgroundColor: 'rgba(0, 184, 217, 0.6)',
+    borderColor: '#00B8D9',
+    borderWidth: 2,
+    fill: true,
+    pointRadius: 0,
+    pointHoverRadius: 5,
+  });
+
+  // MEI Empresa (si aplica)
+  if (result.meiEmployer > 0) {
+    datasets.push({
+      label: 'MEI Empresa',
+      data: [result.meiEmployer, result.meiEmployer, result.meiEmployer, result.meiEmployer, result.meiEmployer],
+      backgroundColor: 'rgba(0, 150, 180, 0.6)',
+      borderColor: '#0096B4',
+      borderWidth: 2,
+      fill: true,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+    });
+  }
+
+  // Cuota Solidaridad Empresa (si aplica)
+  if (result.solidarityQuotaEmployer > 0) {
+    datasets.push({
+      label: 'Cuota Solidaridad Empresa',
+      data: [result.solidarityQuotaEmployer, result.solidarityQuotaEmployer, result.solidarityQuotaEmployer, result.solidarityQuotaEmployer, result.solidarityQuotaEmployer],
+      backgroundColor: 'rgba(0, 120, 150, 0.6)',
+      borderColor: '#007896',
+      borderWidth: 2,
+      fill: true,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+    });
+  }
+
+  // SS Trabajador
+  datasets.push({
+    label: 'SS Trabajador',
+    data: [result.socialSecurityContribution, result.socialSecurityContribution, result.socialSecurityContribution, result.socialSecurityContribution, result.socialSecurityContribution],
+    backgroundColor: 'rgba(45, 156, 219, 0.6)',
+    borderColor: '#2D9CDB',
+    borderWidth: 2,
+    fill: true,
+    pointRadius: 0,
+    pointHoverRadius: 5,
+  });
+
+  // MEI Trabajador (si aplica)
+  if (result.meiWorker > 0) {
+    datasets.push({
+      label: 'MEI Trabajador',
+      data: [result.meiWorker, result.meiWorker, result.meiWorker, result.meiWorker, result.meiWorker],
+      backgroundColor: 'rgba(60, 130, 200, 0.6)',
+      borderColor: '#3C82C8',
+      borderWidth: 2,
+      fill: true,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+    });
+  }
+
+  // Cuota Solidaridad Trabajador (si aplica)
+  if (result.solidarityQuotaWorker > 0) {
+    datasets.push({
+      label: 'Cuota Solidaridad Trabajador',
+      data: [result.solidarityQuotaWorker, result.solidarityQuotaWorker, result.solidarityQuotaWorker, result.solidarityQuotaWorker, result.solidarityQuotaWorker],
+      backgroundColor: 'rgba(75, 110, 180, 0.6)',
+      borderColor: '#4B6EB4',
+      borderWidth: 2,
+      fill: true,
+      pointRadius: 0,
+      pointHoverRadius: 5,
+    });
+  }
+
+  // IRPF
+  datasets.push({
+    label: 'IRPF',
+    data: [result.irpfRetention, result.irpfRetention, result.irpfRetention, result.irpfRetention, result.irpfRetention],
+    backgroundColor: 'rgba(123, 97, 255, 0.6)',
+    borderColor: '#7B61FF',
+    borderWidth: 2,
+    fill: true,
+    pointRadius: 0,
+    pointHoverRadius: 5,
+  });
+
+  // Salario Neto
+  datasets.push({
+    label: 'Salario Neto',
+    data: [result.netAnnual, result.netAnnual, result.netAnnual, result.netAnnual, result.netAnnual],
+    backgroundColor: 'rgba(39, 174, 96, 0.6)',
+    borderColor: '#27AE60',
+    borderWidth: 2,
+    fill: true,
+    pointRadius: 0,
+    pointHoverRadius: 5,
+  });
+
   const stackedData = {
     labels: ['0%', '25%', '50%', '75%', '100%'],
-    datasets: [
-      {
-        label: 'SS Empresa',
-        data: [result.employerSocialSecurity, result.employerSocialSecurity, result.employerSocialSecurity, result.employerSocialSecurity, result.employerSocialSecurity],
-        backgroundColor: 'rgba(0, 184, 217, 0.6)',
-        borderColor: '#00B8D9',
-        borderWidth: 2,
-        fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-      },
-      {
-        label: 'SS Trabajador',
-        data: [result.socialSecurityContribution, result.socialSecurityContribution, result.socialSecurityContribution, result.socialSecurityContribution, result.socialSecurityContribution],
-        backgroundColor: 'rgba(45, 156, 219, 0.6)',
-        borderColor: '#2D9CDB',
-        borderWidth: 2,
-        fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-      },
-      {
-        label: 'IRPF',
-        data: [result.irpfRetention, result.irpfRetention, result.irpfRetention, result.irpfRetention, result.irpfRetention],
-        backgroundColor: 'rgba(123, 97, 255, 0.6)',
-        borderColor: '#7B61FF',
-        borderWidth: 2,
-        fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-      },
-      {
-        label: 'Salario Neto',
-        data: [result.netAnnual, result.netAnnual, result.netAnnual, result.netAnnual, result.netAnnual],
-        backgroundColor: 'rgba(39, 174, 96, 0.6)',
-        borderColor: '#27AE60',
-        borderWidth: 2,
-        fill: true,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-      }
-    ]
+    datasets: datasets
   };
 
   const stackedOptions = {
@@ -289,7 +358,9 @@ export const NetSalaryChart: React.FC<NetSalaryChartProps> = ({ result }) => {
       tooltip: {
         callbacks: {
           label: function(context: any) {
-            const total = result.employerSocialSecurity + result.socialSecurityContribution + result.irpfRetention + result.netAnnual;
+            const total = result.employerSocialSecurity + result.meiEmployer + result.solidarityQuotaEmployer + 
+                         result.socialSecurityContribution + result.meiWorker + result.solidarityQuotaWorker + 
+                         result.irpfRetention + result.netAnnual;
             const percentage = ((context.parsed.y / total) * 100).toFixed(1);
             return `${context.dataset.label}: ${formatCurrency(context.parsed.y)} (${percentage}%)`;
           }

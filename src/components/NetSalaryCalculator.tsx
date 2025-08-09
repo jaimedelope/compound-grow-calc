@@ -24,6 +24,10 @@ interface SalaryResult {
   grossPeriodic: number;
   socialSecurityContribution: number;
   employerSocialSecurity: number;
+  meiWorker: number;
+  meiEmployer: number;
+  solidarityQuotaWorker: number;
+  solidarityQuotaEmployer: number;
   irpfRetention: number;
   netAnnual: number;
   netPeriodic: number;
@@ -205,14 +209,69 @@ export const NetSalaryCalculator: React.FC = () => {
     }
   };
 
+  // Mecanismo de Equidad Intergeneracional (MEI) - 2025
+  const calculateMEI = (grossSalary: number) => {
+    const ssBase = Math.min(grossSalary, 53760); // Base máxima de cotización 2024
+    const meiRate = 0.008; // 0.8% total
+    const meiEmployer = ssBase * 0.0067; // 0.67% empresa
+    const meiWorker = ssBase * 0.0013; // 0.13% trabajador
+    
+    return { meiEmployer, meiWorker };
+  };
+
+  // Cuota de Solidaridad - 2025
+  const calculateSolidarityQuota = (grossSalary: number) => {
+    const maxBase2025 = 58908; // Base máxima 2025: 4.909€/mes * 12
+    
+    if (grossSalary <= maxBase2025) {
+      return { solidarityQuotaEmployer: 0, solidarityQuotaWorker: 0 };
+    }
+    
+    const excessSalary = grossSalary - maxBase2025;
+    const monthlyExcess = excessSalary / 12;
+    
+    let totalQuota = 0;
+    
+    // Primer tramo: hasta 10% por encima (hasta 490,90€/mes excess)
+    const firstBracketLimit = (4909 * 0.1) * 12; // 5.890,8€ anuales
+    if (excessSalary > 0) {
+      const firstBracketAmount = Math.min(excessSalary, firstBracketLimit);
+      totalQuota += firstBracketAmount * 0.0092; // 0.92%
+    }
+    
+    // Segundo tramo: entre 10% y 50% por encima (hasta 1.963,60€/mes excess)
+    const secondBracketLimit = (4909 * 0.4) * 12; // 23.563,2€ anuales adicionales
+    if (excessSalary > firstBracketLimit) {
+      const secondBracketAmount = Math.min(excessSalary - firstBracketLimit, secondBracketLimit);
+      totalQuota += secondBracketAmount * 0.01; // 1%
+    }
+    
+    // Tercer tramo: más del 50% por encima
+    if (excessSalary > firstBracketLimit + secondBracketLimit) {
+      const thirdBracketAmount = excessSalary - firstBracketLimit - secondBracketLimit;
+      totalQuota += thirdBracketAmount * 0.0117; // 1.17%
+    }
+    
+    // Distribución: 83.39% empresa, 16.61% trabajador
+    const solidarityQuotaEmployer = totalQuota * 0.8339;
+    const solidarityQuotaWorker = totalQuota * 0.1661;
+    
+    return { solidarityQuotaEmployer, solidarityQuotaWorker };
+  };
+
   const calculateSalary = () => {
     if (!validateInputs()) return;
 
     const grossAnnual = params.grossSalary;
     const socialSecurity = calculateSocialSecurity(grossAnnual);
     const employerSS = calculateEmployerSocialSecurity(grossAnnual);
-    const irpf = calculateIRPF(grossAnnual, socialSecurity, params);
-    const netAnnual = grossAnnual - socialSecurity - irpf;
+    const { meiEmployer, meiWorker } = calculateMEI(grossAnnual);
+    const { solidarityQuotaEmployer, solidarityQuotaWorker } = calculateSolidarityQuota(grossAnnual);
+    
+    // IRPF se calcula sobre el salario bruto menos las cotizaciones del trabajador (incluyendo MEI)
+    const totalWorkerContributions = socialSecurity + meiWorker + solidarityQuotaWorker;
+    const irpf = calculateIRPF(grossAnnual, totalWorkerContributions, params);
+    const netAnnual = grossAnnual - totalWorkerContributions - irpf;
     
     const periodsPerYear = getPeriodsPerYear(params.payFrequency);
     const grossPeriodic = grossAnnual / periodsPerYear;
@@ -224,6 +283,10 @@ export const NetSalaryCalculator: React.FC = () => {
       grossPeriodic,
       socialSecurityContribution: socialSecurity,
       employerSocialSecurity: employerSS,
+      meiWorker,
+      meiEmployer,
+      solidarityQuotaWorker,
+      solidarityQuotaEmployer,
       irpfRetention: irpf,
       netAnnual,
       netPeriodic,
@@ -465,12 +528,24 @@ export const NetSalaryCalculator: React.FC = () => {
                     </div>
 
                     <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-destructive">Deducciones</h3>
+                      <h3 className="text-lg font-semibold text-destructive">Deducciones del Trabajador</h3>
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Seguridad Social:</span>
                           <span className="font-semibold text-destructive">-{formatCurrency(result.socialSecurityContribution)}</span>
                         </div>
+                        {result.meiWorker > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">MEI (Trabajador):</span>
+                            <span className="font-semibold text-destructive">-{formatCurrency(result.meiWorker)}</span>
+                          </div>
+                        )}
+                        {result.solidarityQuotaWorker > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Cuota Solidaridad:</span>
+                            <span className="font-semibold text-destructive">-{formatCurrency(result.solidarityQuotaWorker)}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Retención IRPF:</span>
                           <span className="font-semibold text-destructive">-{formatCurrency(result.irpfRetention)}</span>
@@ -497,8 +572,47 @@ export const NetSalaryCalculator: React.FC = () => {
 
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p>• Cotización SS: {((result.socialSecurityContribution / result.grossAnnual) * 100).toFixed(2)}%</p>
+                    {result.meiWorker > 0 && (
+                      <p>• MEI Trabajador: {((result.meiWorker / result.grossAnnual) * 100).toFixed(2)}%</p>
+                    )}
+                    {result.solidarityQuotaWorker > 0 && (
+                      <p>• Cuota Solidaridad: {((result.solidarityQuotaWorker / result.grossAnnual) * 100).toFixed(2)}%</p>
+                    )}
                     <p>• Retención IRPF: {((result.irpfRetention / result.grossAnnual) * 100).toFixed(2)}%</p>
-                    <p>• Total deducciones: {(((result.socialSecurityContribution + result.irpfRetention) / result.grossAnnual) * 100).toFixed(2)}%</p>
+                    <p>• Total deducciones: {(((result.socialSecurityContribution + result.meiWorker + result.solidarityQuotaWorker + result.irpfRetention) / result.grossAnnual) * 100).toFixed(2)}%</p>
+                  </div>
+
+                  {/* Coste para la empresa */}
+                  <Separator />
+                  <div className="bg-muted p-4 rounded-lg">
+                    <h4 className="font-semibold mb-2">Coste Total para la Empresa</h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>Salario bruto:</span>
+                        <span>{formatCurrency(result.grossAnnual)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>SS Empresa:</span>
+                        <span>{formatCurrency(result.employerSocialSecurity)}</span>
+                      </div>
+                      {result.meiEmployer > 0 && (
+                        <div className="flex justify-between">
+                          <span>MEI Empresa:</span>
+                          <span>{formatCurrency(result.meiEmployer)}</span>
+                        </div>
+                      )}
+                      {result.solidarityQuotaEmployer > 0 && (
+                        <div className="flex justify-between">
+                          <span>Cuota Solidaridad Empresa:</span>
+                          <span>{formatCurrency(result.solidarityQuotaEmployer)}</span>
+                        </div>
+                      )}
+                      <Separator />
+                      <div className="flex justify-between font-semibold">
+                        <span>Total coste:</span>
+                        <span>{formatCurrency(result.grossAnnual + result.employerSocialSecurity + result.meiEmployer + result.solidarityQuotaEmployer)}</span>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
