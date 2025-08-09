@@ -4,12 +4,15 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend,
   ArcElement,
+  Filler,
 } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, PieChart } from 'lucide-react';
 
@@ -17,10 +20,13 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend,
-  ArcElement
+  ArcElement,
+  Filler
 );
 
 interface SalaryResult {
@@ -193,47 +199,75 @@ export const NetSalaryChart: React.FC<NetSalaryChartProps> = ({ result }) => {
     cutout: '60%'
   };
 
-  // Stacked Bar Chart Data (Employer Cost Breakdown)
+  // Stacked Area Chart Data (Employer Cost Breakdown)
   const stackedData = {
-    labels: ['Coste Total para la Empresa'],
+    labels: ['0%', '25%', '50%', '75%', '100%'],
     datasets: [
       {
         label: 'SS Empresa',
-        data: [result.employerSocialSecurity],
-        backgroundColor: '#00B8D9',
-        borderColor: '#008DA6',
-        borderWidth: 1
+        data: [result.employerSocialSecurity, result.employerSocialSecurity, result.employerSocialSecurity, result.employerSocialSecurity, result.employerSocialSecurity],
+        backgroundColor: 'rgba(0, 184, 217, 0.6)',
+        borderColor: '#00B8D9',
+        borderWidth: 2,
+        fill: true,
+        pointRadius: 0,
+        pointHoverRadius: 5,
       },
       {
         label: 'SS Trabajador',
-        data: [result.socialSecurityContribution],
-        backgroundColor: '#2D9CDB',
-        borderColor: '#2380B8',
-        borderWidth: 1
+        data: [result.socialSecurityContribution, result.socialSecurityContribution, result.socialSecurityContribution, result.socialSecurityContribution, result.socialSecurityContribution],
+        backgroundColor: 'rgba(45, 156, 219, 0.6)',
+        borderColor: '#2D9CDB',
+        borderWidth: 2,
+        fill: true,
+        pointRadius: 0,
+        pointHoverRadius: 5,
       },
       {
         label: 'IRPF',
-        data: [result.irpfRetention],
-        backgroundColor: '#7B61FF',
-        borderColor: '#6B4EE6',
-        borderWidth: 1
+        data: [result.irpfRetention, result.irpfRetention, result.irpfRetention, result.irpfRetention, result.irpfRetention],
+        backgroundColor: 'rgba(123, 97, 255, 0.6)',
+        borderColor: '#7B61FF',
+        borderWidth: 2,
+        fill: true,
+        pointRadius: 0,
+        pointHoverRadius: 5,
       },
       {
         label: 'Salario Neto',
-        data: [result.netAnnual],
-        backgroundColor: '#27AE60',
-        borderColor: '#1E8449',
-        borderWidth: 1
+        data: [result.netAnnual, result.netAnnual, result.netAnnual, result.netAnnual, result.netAnnual],
+        backgroundColor: 'rgba(39, 174, 96, 0.6)',
+        borderColor: '#27AE60',
+        borderWidth: 2,
+        fill: true,
+        pointRadius: 0,
+        pointHoverRadius: 5,
       }
     ]
   };
 
   const stackedOptions = {
-    indexAxis: 'y' as const,
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
     scales: {
       x: {
+        title: {
+          display: true,
+          text: 'Distribución',
+          color: 'hsl(220, 10%, 46%)'
+        },
+        ticks: {
+          color: 'hsl(220, 10%, 46%)'
+        },
+        grid: {
+          color: 'hsl(220, 13%, 91%)'
+        }
+      },
+      y: {
         stacked: true,
         title: {
           display: true,
@@ -249,15 +283,6 @@ export const NetSalaryChart: React.FC<NetSalaryChartProps> = ({ result }) => {
         grid: {
           color: 'hsl(220, 13%, 91%)'
         }
-      },
-      y: {
-        stacked: true,
-        ticks: {
-          color: 'hsl(220, 10%, 46%)'
-        },
-        grid: {
-          display: false
-        }
       }
     },
     plugins: {
@@ -265,8 +290,8 @@ export const NetSalaryChart: React.FC<NetSalaryChartProps> = ({ result }) => {
         callbacks: {
           label: function(context: any) {
             const total = result.employerSocialSecurity + result.socialSecurityContribution + result.irpfRetention + result.netAnnual;
-            const percentage = ((context.parsed.x / total) * 100).toFixed(1);
-            return `${context.dataset.label}: ${formatCurrency(context.parsed.x)} (${percentage}%)`;
+            const percentage = ((context.parsed.y / total) * 100).toFixed(1);
+            return `${context.dataset.label}: ${formatCurrency(context.parsed.y)} (${percentage}%)`;
           }
         }
       },
@@ -299,7 +324,7 @@ export const NetSalaryChart: React.FC<NetSalaryChartProps> = ({ result }) => {
         </CardHeader>
         <CardContent>
           <div className="h-40">
-            <Bar data={stackedData} options={stackedOptions} />
+            <Line data={stackedData} options={stackedOptions} />
           </div>
         </CardContent>
       </Card>
